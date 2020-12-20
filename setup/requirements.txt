@@ -1,1 +1,4 @@
 termcolor
+imgaug
+seaborn
+natsort
