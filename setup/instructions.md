@@ -24,3 +24,9 @@ Install PyTorch, Tensorflow (needed for segmentation) and dependencies
 conda install pytorch=1.1.0 torchvision cudatoolkit=10.0 -c pytorch
 pip install -r requirements.txt
 ```
+
+### Update PYTHONPATH
+
+```
+export PYTHONPATH=/home/users/piyushb/projects/test-time-training/
+```
