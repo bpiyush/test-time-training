@@ -2,3 +2,4 @@ termcolor
 imgaug
 seaborn
 natsort
+jupyterlab
