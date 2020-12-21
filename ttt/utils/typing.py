@@ -6,6 +6,18 @@ else:
     from typing_extensions import TypedDict
 
 
+class TransformDict(TypedDict):
+    """
+    Defines novel type for type-hinting transform dict
+    Each transformation is defined by a dict is of the form: {
+        'name': <name of the transform>,
+        'params': dict of named parameters for this transform
+    }
+    """
+    name: str
+    params: dict
+
+
 class DatasetConfigDict(TypedDict):
     """
     Defines novel type for type-hinting dataset config dict
