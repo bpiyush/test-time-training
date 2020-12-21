@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from ttt.utils.typing import LabelDict
-from ttt.utils.image import read_img
+from ttt.utils.image import read_image
 
 
 class Image:
@@ -39,7 +39,7 @@ class Image:
         :returns: image either as a nunpy array or torch.Tensor
         """
         if self.image is None:
-            self.image = read_img(self.path, mode)
+            self.image = read_image(self.path, mode)
 
         self.height, self.width = self.image.shape[:2]
 
