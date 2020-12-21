@@ -21,7 +21,7 @@ export PATH=$PATH:/usr/local/cuda-10.0/bin
 
 Install PyTorch, Tensorflow (needed for segmentation) and dependencies
 ```
-conda install -c pytorch torchvision=0.2.2 cudatoolkit=10.0
+conda install -c pytorch==1.4.0 torchvision=0.2.2 cudatoolkit=10.0
 pip install -r requirements.txt
 ```
 

@@ -7,4 +7,5 @@ jupyter_nbextensions_configurator
 jupyter_http_over_ws
 pytorch-lightning
 ipdb
-kornia
+kornia==0.2.2
+termcolor
