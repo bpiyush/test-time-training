@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 
 from ttt.utils.typing import DatasetConfigDict
 
+
 class BaseDataset(Dataset):
     """
     Defines the base dataset object that needs to be inherited
@@ -35,6 +36,14 @@ class BaseDataset(Dataset):
         """Load all data items into self.items as specified by self.dataset_config
         For example, for an image dataset, self.items will be a list of ttt.data.image.Image
         """
+        pass
+
+    @abstractmethod
+    def __len__(self):
+        pass
+
+    @abstractmethod
+    def __getitem__(self):
         pass
 
     def load_fraction(self, fraction: float, seed: int = 0):
