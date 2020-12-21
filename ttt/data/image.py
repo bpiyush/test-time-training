@@ -3,6 +3,7 @@ from typing import Union, List, Tuple
 from os.path import exists
 import numpy as np
 import torch
+
 from ttt.utils.typing import LabelDict
 from ttt.utils.image import read_img
 
