@@ -5,3 +5,4 @@ natsort
 jupyterlab
 jupyter_nbextensions_configurator
 jupyter_http_over_ws
+pytorch-lightning
