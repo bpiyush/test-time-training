@@ -6,6 +6,20 @@ else:
     from typing_extensions import TypedDict
 
 
+class DatasetConfigDict(TypedDict):
+    """
+    Defines novel type for type-hinting dataset config dict
+    Each dataset is defined by a dict of the form: {
+        'name': <name of the dataset>,
+        'version': version of the dataset to be used
+        'mode': train/test/val split of the dataset
+    }
+    """
+    name: str
+    version: str
+    mode: str
+
+
 class LabelDict(TypedDict):
     """
     Defines novel type for type-hinting label for an object
