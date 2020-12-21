@@ -3,10 +3,10 @@ Defines ClassificationDataset class which is used for classification tasks
 where each input has a single output.
 """
 from os.path import join
+from abc import abstractmethod
 from typing import Tuple, List, Union, Any
 
 import torch
-from torch.utils.data import Dataset
 
 from ttt.data.base import BaseDataset
 from ttt.data.image_transforms import ImageTransformer
@@ -44,6 +44,7 @@ class ClassificationDataset(BaseDataset):
         self.target_transform = target_transform
         self.signal_transform = signal_transform
 
+    @abstractmethod
     def load_items(self):
         pass
 
