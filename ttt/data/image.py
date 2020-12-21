@@ -41,13 +41,14 @@ class Image:
         if self.image is None:
             self.image = read_image(self.path, mode)
 
-        self.height, self.width = self.image.shape[:2]
+        image = self.image.copy()
+        self.height, self.width = image.shape[:2]
 
         if as_tensor:
-            self.image = torch.from_numpy(self.image.copy()).float()
+            image = torch.from_numpy(image.copy()).float()
 
         return {
-            'signal': self.image
+            'signal': image
         }
     
     @staticmethod

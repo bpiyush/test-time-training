@@ -69,7 +69,7 @@ class KorniaBase:
     :type kwargs: dict
     """
     def __init__(
-            self, flip_cls: kornia.augmentation.AugmentationBase2D,
+            self, flip_cls: kornia.augmentation.AugmentationBase,
             **kwargs):
         self.transform = flip_cls(**kwargs)
 
