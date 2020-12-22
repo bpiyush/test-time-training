@@ -228,18 +228,18 @@ class Normalize(KorniaBase):
             dim: int = 0):
         mean, std = self._check_params(mean, std)
         super(Normalize, self).__init__(
-            kornia.enhance.Normalize, mean=mean, std=std)
+            kornia.color.Normalize, mean=mean, std=std)
         self.dim = dim
 
     @staticmethod
     def _check_params(mean, std):
         if isinstance(mean, str):
             assert mean in ['imagenet', 'cifar', 'mnist']
-            mean = locals()(f'{mean}_stats')[0]
+            mean = eval(f'{mean}_stats')[0]
 
         if isinstance(std, str):
             assert std in ['imagenet', 'cifar', 'mnist']
-            std = locals()(f'{std}_stats')[1]
+            std = eval(f'{std}_stats')[1]
 
         if not isinstance(mean, torch.Tensor):
             mean = torch.FloatTensor(mean)

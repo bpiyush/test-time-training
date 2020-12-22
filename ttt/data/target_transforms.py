@@ -19,7 +19,8 @@ class ClassificationTargetTransformer:
     def __call__(self, target:  List[Union[str, int, float]]) -> int:
         # find the intersection between target and self.classes
         intersection = [
-            _target for _target in target if _target in self.classes]
+            _target for _target in target if _target in self.classes
+        ]
 
         # ensure that only one of the relevant classes is present
         # in the target at max

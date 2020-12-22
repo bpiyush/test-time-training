@@ -66,7 +66,7 @@ class CIFAR10(ClassificationDataset):
 
             iterator = range(X.shape[0])
             for i in tqdm(iterator, desc=colored(f"Loading items for {name}", "yellow")):
-                item = Image(image=X[i], label={"classification": y[i]})
+                item = Image(image=X[i], label={"classification": [y[i]]})
                 self.items.append(item)
 
     @staticmethod
@@ -87,6 +87,33 @@ class CIFAR10(ClassificationDataset):
 
             if name == "CIFAR-10.1":
                 assert corruption is None and corrupt_intensity is None and version in {"v4", "v6"}
+
+
+class CIDAR10DatasetBuilder:
+    """Builds a CIDAR10Dataset object"""
+    def __call__(self, data_root: str, mode: str,
+                 dataset_config: List[dict], **kwargs):
+        """Builds a CIDAR10Dataset object
+
+        :param data_root: directory where data versions reside
+        :type data_root: str
+        :param mode: mode/split to load; one of {'train', 'test', 'val'}
+        :type mode: str
+        :param dataset_config: list of dictionaries, each containing
+            (name, version, mode) corresponding to a dataset
+        :type dataset_config: List[dict]
+        :param **kwargs: dictionary containing values corresponding to the
+            arguments of the CIDAR10Dataset class
+        :type **kwargs: dict
+        :returns: a ClassificationDataset object
+        """
+        for i, config in enumerate(dataset_config):
+            dataset_config[i]['mode'] = mode
+
+        kwargs['dataset_config'] = dataset_config
+        kwargs['data_root'] = data_root
+        self._instance = CIFAR10(**kwargs)
+        return self._instance
 
 
 if __name__ == '__main__':
