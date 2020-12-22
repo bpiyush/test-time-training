@@ -47,6 +47,7 @@ class CIFAR10(ClassificationDataset):
             dataset_dir = join(self.data_root, name, "raw")
 
             if name == "CIFAR-10":
+                assert mode in ["train", "test"], f"Dataset {name} does not val `mode=val` defined."
                 _dataset = _CIFAR10(
                     root=dataset_dir, train=(mode == "train"), download=True
                 )
