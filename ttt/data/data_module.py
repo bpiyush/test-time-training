@@ -38,7 +38,7 @@ class DataModule(pl.LightningDataModule):
             self.batch_size,
             num_workers=self.num_workers,
             shuffle=True,
-            drop_last=False)
+            drop_last=True)
 
     def val_dataloader(self):
         return get_dataloader(
