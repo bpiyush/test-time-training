@@ -1,4 +1,7 @@
-folder=/scratch/users/piyushb/test-time-training/datasets/CIFAR-10.1/raw
+DATASET_DIR=/efs/test-time-training/datasets
+folder=$DATASET_DIR/CIFAR-10.1/raw
+
+mkdir -p $folder
 
 # download the data
 path=$folder/cifar10.1_v4_data.npy
