@@ -44,3 +44,16 @@ class LabelDict(TypedDict):
     classification, list of lists for detection, etc.
     """
     task_name: Any
+
+
+class LayerConfigDict(TypedDict):
+    """
+    Defines novel type for type-hinting layer config dict
+    Each layer is defined by a dict of the form: {
+        'name': args
+    }
+    where `name` is the name of the class corresponding to the layer and
+    `args` is a dictionary containing values for different arguments used to
+    define the layer.
+    """
+    name: dict

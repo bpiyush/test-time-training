@@ -14,10 +14,12 @@ from ttt.models.networks.utils import _correct_state_dict
 from ttt.models.networks.layers import layer_factory
 from ttt.models.init import init_factory
 from ttt.models.optim import optimizer_factory, scheduler_factory
+from ttt.utils.typing import LayerConfigDict
 
 
 class NeuralNetworkModule(pl.LightningModule):
     """Extends the LightningModule for any feed-forward model
+
     :param config: config for defining the module
     :type config: Dict
     :param train_mode: key for the train data split, defaults to 'train'
