@@ -5,10 +5,10 @@ import torch
 import torch.nn.functional as F
 from torch.nn import init
 from torch.nn.parameter import Parameter
-from torch.nn import Conv2d, Linear, BatchNorm2d, ReLU,\
-    LeakyReLU, MaxPool2d, AdaptiveAvgPool2d, Flatten, Dropout,\
-    Sigmoid, Conv1d, BatchNorm1d, MaxPool1d, AdaptiveAvgPool1d, \
-    GroupNorm, PReLU, Module, Softmax
+from torch.nn import Conv2d, Linear, BatchNorm2d, \
+    MaxPool2d, AdaptiveAvgPool2d, Flatten, Dropout,\
+    Conv1d, BatchNorm1d, MaxPool1d, AdaptiveAvgPool1d, \
+    GroupNorm, Module
 
 from ttt.factory import Factory
 from ttt.models.networks.resnet import ResNetCIFAR
@@ -29,15 +29,10 @@ layer_factory = Factory()
 layer_factory.register_builder('Conv2d', Conv2d)
 layer_factory.register_builder('Linear', Linear)
 layer_factory.register_builder('BatchNorm2d', BatchNorm2d)
-layer_factory.register_builder('ReLU', ReLU)
-layer_factory.register_builder('PReLU', PReLU)
-layer_factory.register_builder('LeakyReLU', LeakyReLU)
 layer_factory.register_builder('MaxPool2d', MaxPool2d)
 layer_factory.register_builder('AdaptiveAvgPool2d', AdaptiveAvgPool2d)
 layer_factory.register_builder('Flatten', Flatten)
 layer_factory.register_builder('Dropout', Dropout)
-layer_factory.register_builder('Sigmoid', Sigmoid)
-layer_factory.register_builder('Softmax', Softmax)
 layer_factory.register_builder('Conv1d', Conv1d)
 layer_factory.register_builder('BatchNorm1d', BatchNorm1d)
 layer_factory.register_builder('MaxPool1d', MaxPool1d)
