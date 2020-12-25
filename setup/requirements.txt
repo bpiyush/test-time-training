@@ -1,4 +1,5 @@
-termcolor
+tqdm
+colorama
 imgaug
 seaborn
 natsort
