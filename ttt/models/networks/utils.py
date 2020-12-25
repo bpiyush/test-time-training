@@ -5,9 +5,12 @@ Some ideas borrowed from
 https://github.com/yueatsprograms/ttt_cifar_release/blob/master/models/SSHead.py
 """
 import numpy as np
+import torch
 from torch import nn
 import math
 import copy
+import logging
+from collections import OrderedDict
 
 from ttt.models.networks.layers import ViewFlatten, layer_factory
 
@@ -75,6 +78,20 @@ def get_head_from_network(
     head = nn.Sequential(*head_layers)
 
     return head
+
+
+def _correct_state_dict(
+        loaded_state_dict: OrderedDict,
+        model_state_dict: OrderedDict) -> OrderedDict:
+    """Only retains key from the `loaded_state_dict` that match with `model_state_dict`"""
+    corrected_state_dict = OrderedDict()
+    for key, value in loaded_state_dict.items():
+        if key not in model_state_dict or value.shape != model_state_dict[key].shape:
+            logging.info(f'Removing {key} from state_dict')
+            continue
+
+        corrected_state_dict[key] = value
+    return corrected_state_dict
 
 
 if __name__ == '__main__':
