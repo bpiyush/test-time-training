@@ -82,7 +82,8 @@ def get_head_from_network(
 
 def _correct_state_dict(
         loaded_state_dict: OrderedDict,
-        model_state_dict: OrderedDict) -> OrderedDict:
+        model_state_dict: OrderedDict
+    ) -> OrderedDict:
     """Only retains key from the `loaded_state_dict` that match with `model_state_dict`"""
     corrected_state_dict = OrderedDict()
     for key, value in loaded_state_dict.items():
