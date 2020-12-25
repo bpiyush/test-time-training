@@ -77,7 +77,8 @@ if __name__ == '__main__':
     import numpy as np
     from os.path import join
 
-    ROOT = "/scratch/users/piyushb/test-time-training/"
+    from ttt.constants import ROOT
+    
     DATASET = join(ROOT, "datasets/CIFAR-10.1/")
     cifar_path = join(DATASET, "raw/cifar10.1_v4_data.npy")
 

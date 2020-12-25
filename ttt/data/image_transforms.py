@@ -384,15 +384,21 @@ transform_factory.register_builder('RandomCrop', RandomCrop)
 if __name__ == '__main__':
     # testing for a sample image
     import numpy as np
-    from os.path import join
+    import cv2
+    from os.path import join, exists
 
     from ttt.data.image import Image
-
-    ROOT = "/scratch/users/piyushb/test-time-training/"
+    from ttt.constants import ROOT
+    
     DATASET = join(ROOT, "datasets/CIFAR-10.1/")
 
     # loading image by passing a path
     sample_image_path = join(DATASET, "raw/sample.png")
+    if not exists(sample_image_path):
+        dataset = np.load(join(DATASET, 'raw/cifar10.1_v4_data.npy'))
+        sample_image = dataset[0]
+        cv2.imwrite(sample_image_path, sample_image)
+
     item = Image(path=sample_image_path)
     signal = item.load(as_tensor=True)['signal']
 
