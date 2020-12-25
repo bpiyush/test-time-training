@@ -1,4 +1,8 @@
-folder=/scratch/users/piyushb/test-time-training/datasets/CIFAR-10-C
+DATASET_DIR=/efs/test-time-training/datasets
+folder=$DATASET_DIR/CIFAR-10-C
+
+mkdir -p $folder
+mkdir -p $folder/raw
 
 # download .tar file
 path=$folder/CIFAR-10-C.tar
