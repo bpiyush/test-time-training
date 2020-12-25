@@ -9,16 +9,7 @@ from torch import nn
 import math
 import copy
 
-
-class ViewFlatten(nn.Module):
-    """
-    Flattening layer.
-    """
-    def __init__(self):
-        super(ViewFlatten, self).__init__()
-
-    def forward(self, x):
-        return x.view(x.size(0), -1)
+from ttt.models.networks.layers import ViewFlatten, layer_factory
 
 
 def unique(array):
@@ -60,6 +51,32 @@ def get_extractor_from_network(
     return extractor
 
 
+def get_head_from_network(
+    network: nn.Module, layer_name: str, add_layers: list = []
+    ):
+    layer_names = get_layer_names(network)
+    layer_names = list(layer_names)
+    assert layer_name in layer_names
+
+    index = layer_names.index(layer_name)
+    head_layer_names = layer_names[index + 1:-1]
+    head_layers = []
+    for layer_name in head_layer_names:
+        head_layers.append(getattr(network, layer_name))
+
+    for index, layer_config in enumerate(add_layers):
+        assert set(layer_config.keys()) == {'name', 'params'}
+        layer = layer_factory.create(
+            layer_config['name'], **layer_config['params']
+        )
+        head_layers.append(layer)    
+    head_layers = copy.deepcopy(head_layers)
+
+    head = nn.Sequential(*head_layers)
+
+    return head
+
+
 if __name__ == '__main__':
     import torch
     from ttt.models.networks.resnet import ResNetCIFAR as ResNet
@@ -67,6 +84,7 @@ if __name__ == '__main__':
     network = ResNet(depth=26, width=1, classes=10)
     x = torch.randn((1, 3, 32, 32))
 
+    # extractor from layer 2
     extractor = get_extractor_from_network(network, 'layer2', add_flat=True)
     y = extractor(x)
     assert y.shape == (1, 8192)
@@ -75,6 +93,7 @@ if __name__ == '__main__':
     y = extractor(x)
     assert y.shape == (1, 32, 16, 16)
 
+    # extractor from layer3 (+ until avgpool)
     extractor = get_extractor_from_network(network, 'avgpool', add_flat=True)
     y = extractor(x)
     assert y.shape == (1, 64)
@@ -82,3 +101,26 @@ if __name__ == '__main__':
     extractor = get_extractor_from_network(network, 'avgpool', add_flat=False)
     y = extractor(x)
     assert y.shape == (1, 64, 1, 1)
+
+    # head from layer 2
+    num_classes = 4
+    add_layers = [
+        {"name": "ViewFlatten", "params": {}},
+        {"name": "Linear", "params": {"in_features": 64 * 1, "out_features": num_classes}}
+    ]
+    head = get_head_from_network(network, 'layer2', add_layers=add_layers)
+    z = torch.randn((1, 32, 16, 16))
+    y = head(z)
+    assert y.shape == (1, num_classes)
+
+    # head from layer 3
+    # NOTE: you only need ViewFlatten layer when you have passed add_flat=False
+    # in creating extractor from layer3
+    num_classes = 4
+    add_layers = [
+        {"name": "Linear", "params": {"in_features": 64 * 1, "out_features": num_classes}}
+    ]
+    head = get_head_from_network(network, 'avgpool', add_layers=add_layers)
+    z = torch.randn((1, 64))
+    y = head(z)
+    assert y.shape == (1, num_classes)
