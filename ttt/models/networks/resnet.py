@@ -97,3 +97,15 @@ class ResNetCIFAR(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
+
+
+if __name__ == '__main__':
+    import torch
+
+    classes = 10
+    resnet = ResNetCIFAR(depth=26, width=1, classes=classes)
+
+    x = torch.randn((1, 3, 32, 32))
+    y = resnet(x)
+
+    assert y.shape == (1, classes)
