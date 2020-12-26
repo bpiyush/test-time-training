@@ -17,7 +17,7 @@ from ttt.models.networks.layers import layer_factory, ExtractorHead
 from ttt.models.init import init_factory
 from ttt.models.optim import optimizer_factory, scheduler_factory
 from ttt.utils.typing import LayerConfigDict
-# from ttt.models.networks.resnet import ResNetCIFAR as ResNet
+from ttt.models.losses import loss_factory
 
 
 class ClassificationModel(pl.LightningModule):
@@ -52,6 +52,9 @@ class ClassificationModel(pl.LightningModule):
 
         # setup optimizers and schedulers
         self._setup_optimizers()
+
+        # setup losses
+        self._setup_losses()
 
     def _build_network(self):
         """Builds the network"""
@@ -93,6 +96,14 @@ class ClassificationModel(pl.LightningModule):
                 scheduler_config['name'], **scheduler_config['params']
             )
 
+    def _setup_losses(self):
+        self.losses = dict()
+        for index, loss_config in enumerate(self.config['losses']):
+            loss_fn = loss_factory.create(
+                loss_config['name'], **loss_config['params']
+            )
+            self.losses.update({loss_config['name']: loss_fn})
+
     @staticmethod
     def _check_config(config):
         assert isinstance(config, dict)
@@ -104,8 +115,12 @@ class ClassificationModel(pl.LightningModule):
 
         assert "optimizer" in config
 
+        assert "losses" in config
+
 
 if __name__ == '__main__':
+    import torch
+
     main_classes = 10
     ssl_classes = 4
     config = {
@@ -162,7 +177,11 @@ if __name__ == '__main__':
                     "last_epoch": -1
                 }
             }
-        }
+        },
+        # define all losses
+        "losses": [
+            {"name": "cross-entropy", "params": {}}
+        ]
     }
     classifier = ClassificationModel(config)
 
@@ -172,4 +191,9 @@ if __name__ == '__main__':
     assert hasattr(classifier, 'optimizer')
     assert hasattr(classifier, 'scheduler')
 
-    import ipdb; ipdb.set_trace()
+    assert hasattr(classifier, "losses")
+    loss_fn = classifier.losses['cross-entropy']
+    predictions = torch.tensor([[0.3, 0.7]])
+    targets = torch.tensor([1])
+    loss = loss_fn(predictions, targets).numpy() 
+    assert loss == np.array(0.5130153, dtype=np.float32)
