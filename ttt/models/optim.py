@@ -12,7 +12,6 @@ optimizer_factory = Factory()
 optimizer_factory.register_builder('SGD', SGD)
 optimizer_factory.register_builder('Adam', Adam)
 optimizer_factory.register_builder('AdamW', AdamW)
-optimizer_factory.register_builder('RAdam', optim.RAdam)
 
 scheduler_factory = Factory()
 scheduler_factory.register_builder('ReduceLROnPlateau', ReduceLROnPlateau)
