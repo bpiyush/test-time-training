@@ -17,7 +17,7 @@ from ttt.models.optim import optimizer_factory, scheduler_factory
 from ttt.utils.typing import LayerConfigDict
 
 
-class NeuralNetworkModule(pl.LightningModule):
+class BaseModel(pl.LightningModule):
     """Extends the LightningModule for any feed-forward model
 
     :param config: config for defining the module
@@ -29,4 +29,34 @@ class NeuralNetworkModule(pl.LightningModule):
     :param test_mode: key for the test data split, defaults to 'test'
     :type test_mode: str, optional
     """
-    pass
+    def __init__(
+            self, config: Dict, train_mode: str = 'train',
+            val_mode: str = 'val', test_mode: str = 'test'
+        ):
+        super(BaseModel, self).__init__()
+        self.train_mode = train_mode
+        self.val_mode = val_mode
+        self.test_mode = test_mode
+
+        self.config = config
+        self.network_config = config['network']
+
+        # build and initialize the network
+        self._build_network()
+        self._init_network()
+        self._setup_optimizers()
+
+    @abstractmethod
+    def _build_network(self):
+        """Builds the network"""
+        pass
+
+    @abstractmethod
+    def _init_network(self):
+        """Initializes the parameters of the network"""
+        pass
+
+    @abstractmethod
+    def _setup_optimizers(self):
+        """Sets up optimizers and schedulers"""
+        pass
