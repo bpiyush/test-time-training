@@ -14,7 +14,7 @@ from ttt.factory import Factory
 from ttt.models.networks.resnet import ResNetCIFAR
 
 
-class ViewFlatten(torch.nn.Module):
+class ViewFlatten(Module):
     """
     Flattening layer.
     """
@@ -23,6 +23,18 @@ class ViewFlatten(torch.nn.Module):
 
     def forward(self, x):
         return x.view(x.size(0), -1)
+
+
+class ExtractorHead(Module):
+    def __init__(self, extractor, head):
+        super(ExtractorHead, self).__init__()
+        self.extractor = extractor
+        self.head = head
+
+    def forward(self, x):
+        z = self.extractor(x)
+        y = self.head(z)
+        return y
 
 
 layer_factory = Factory()
