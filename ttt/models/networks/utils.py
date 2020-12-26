@@ -33,7 +33,7 @@ def get_layer_names(network: nn.Module):
 
 
 def get_extractor_from_network(
-    network: nn.Module, layer_name: str, add_flat: bool = True
+    network: nn.Module, layer_name: str, add_flat: bool = True, _copy: bool = True
     ):
     layer_names = get_layer_names(network)
     layer_names = list(layer_names)
@@ -47,7 +47,9 @@ def get_extractor_from_network(
 
     if add_flat:
         ext_layers.append(ViewFlatten())
-    ext_layers = copy.deepcopy(ext_layers)
+
+    if _copy:
+        ext_layers = copy.deepcopy(ext_layers)
     
     extractor = nn.Sequential(*ext_layers)
 
@@ -55,7 +57,7 @@ def get_extractor_from_network(
 
 
 def get_head_from_network(
-    network: nn.Module, layer_name: str, add_layers: list = []
+    network: nn.Module, layer_name: str, add_layers: list = [], _copy: bool = True
     ):
     layer_names = get_layer_names(network)
     layer_names = list(layer_names)
@@ -72,8 +74,10 @@ def get_head_from_network(
         layer = layer_factory.create(
             layer_config['name'], **layer_config['params']
         )
-        head_layers.append(layer)    
-    head_layers = copy.deepcopy(head_layers)
+        head_layers.append(layer)
+
+    if _copy:    
+        head_layers = copy.deepcopy(head_layers)
 
     head = nn.Sequential(*head_layers)
 
