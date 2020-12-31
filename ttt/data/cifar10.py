@@ -26,12 +26,13 @@ class CIFAR10(ClassificationDataset):
     :type version: str, defaults to "v4"
     """
     def __init__(
-            self, data_root: str, dataset_config: List[DatasetConfigDict],
+            self, mode: str, data_root: str, dataset_config: List[DatasetConfigDict],
             target_transform: ClassificationTargetTransformer = None,
             signal_transform: ImageTransformer = None, fraction: float = 1.0,
             corruption: str = None, corrupt_intensity: int = None
         ):
-        self._check_local_args(dataset_config, corruption, corrupt_intensity)
+        self._check_local_args(mode, dataset_config, corruption, corrupt_intensity)
+        self.mode = mode
         self.corruption = corruption
         self.corrupt_intensity = corrupt_intensity
 
@@ -43,13 +44,12 @@ class CIFAR10(ClassificationDataset):
         self.items = []
 
         for dataset in self.dataset_config:
-            name, version, mode = dataset['name'], dataset['version'], dataset['mode']
+            name, version = dataset['name'], dataset['version']
             dataset_dir = join(self.data_root, name, "raw")
 
             if name == "CIFAR-10":
-                assert mode in ["train", "test"], f"Dataset {name} does not val `mode=val` defined."
                 _dataset = _CIFAR10(
-                    root=dataset_dir, train=(mode == "train"), download=True
+                    root=dataset_dir, train=(self.mode == "train"), download=True
                 )
                 X, y = _dataset.data, _dataset.targets
 
@@ -71,23 +71,26 @@ class CIFAR10(ClassificationDataset):
                 self.items.append(item)
 
     @staticmethod
-    def _check_local_args(dataset_config, corruption, corrupt_intensity):
+    def _check_local_args(mode, dataset_config, corruption, corrupt_intensity):
         for dataset in dataset_config:
-            name, version, mode = dataset['name'], dataset['version'], dataset['mode']
+            name, version = dataset['name'], dataset['version']
             if name in ["CIFAR-10-C", "CIFAR-10.1"]:
                 assert mode == "test", "Only mode=test allowed for CIFAR-10-C, CIFAR-10.1"
 
             if name == "CIFAR-10":
                 assert corruption is None and corrupt_intensity is None and version is None
+                assert mode in ["train", "test"], f"Dataset {name} does not val `mode=val` defined."
 
             if name == "CIFAR-10-C":
                 assert corruption is not None and version is None and corruption in {
                     "gaussian_blur", "fog", "frost", "defocus_blur", "zoom_blur"
                 }
                 assert isinstance(corrupt_intensity, int) and (1 <= corrupt_intensity <= 5)
+                assert mode == "test", f"Only `mode=test is acceptable for dataset {name}`"
 
             if name == "CIFAR-10.1":
                 assert corruption is None and corrupt_intensity is None and version in {"v4", "v6"}
+                assert mode == "test", f"Only `mode=test is acceptable for dataset {name}`"
 
 
 class CIDAR10DatasetBuilder:
@@ -122,26 +125,30 @@ if __name__ == '__main__':
 
     # check CIFAR-10-C
     cifar = CIFAR10(
+        mode='test',
         data_root=DATASET_DIR,
-        dataset_config=[{"name": "CIFAR-10-C", "version": None, "mode": "test"}],
+        dataset_config=[{"name": "CIFAR-10-C", "version": None}],
         corruption="gaussian_blur",
         corrupt_intensity=5
     )
 
     # check CIFAR-10.1
     cifar = CIFAR10(
+        mode='test',
         data_root=DATASET_DIR,
-        dataset_config=[{"name": "CIFAR-10.1", "version": "v4", "mode": "test"}]
+        dataset_config=[{"name": "CIFAR-10.1", "version": "v4"}]
     )
 
     # check CIFAR-10 train
     cifar = CIFAR10(
+        mode='train',
         data_root=DATASET_DIR,
-        dataset_config=[{"name": "CIFAR-10", "version": None, "mode": "train"}]
+        dataset_config=[{"name": "CIFAR-10", "version": None}]
     )
 
     # check CIFAR-10 test
     cifar = CIFAR10(
+        mode='test',
         data_root=DATASET_DIR,
-        dataset_config=[{"name": "CIFAR-10", "version": None, "mode": "test"}]
+        dataset_config=[{"name": "CIFAR-10", "version": None}]
     )
