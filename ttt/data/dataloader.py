@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, Dataset
 from ttt.data import dataset_factory
 from ttt.data.image_transforms import ImageTransformer
 from ttt.data.target_transforms import annotation_factory
+from ttt.data.collate import collate_factory
 from ttt.utils.logger import color
 
 
@@ -67,12 +68,18 @@ def get_dataloader(
     if batch_size == -1:
         batch_size = len(dataset)
 
+    # collate function
+    collate_fn = collate_factory.create(
+        cfg['collate_fn']['name'], **cfg['collate_fn']['params']
+    )
+
     # return the DataLoader object
     return DataLoader(
         dataset=dataset,
         batch_size=batch_size,
         num_workers=num_workers,
         drop_last=drop_last,
+        collate_fn=collate_fn,
         pin_memory=True)
 
 if __name__ == '__main__':
@@ -87,6 +94,10 @@ if __name__ == '__main__':
                 "train": {}
             },
             "config": [{"name": "CIFAR-10", "version": None, "mode": "train"}]
+        },
+        "collate_fn": {
+            "name": "base",
+            "params": {}
         }
     }
     train_dataloader = get_dataloader(cfg, mode="train", batch_size=128, num_workers=10)
@@ -132,6 +143,10 @@ if __name__ == '__main__':
             "params": {
                 "classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
             }
+        },
+        "collate_fn": {
+            "name": "base",
+            "params": {}
         }
     }
     train_dataloader = get_dataloader(cfg, mode="train", batch_size=128, num_workers=10)
