@@ -6,6 +6,9 @@ else:
     from typing_extensions import TypedDict
 
 
+NoneType = type(None)
+
+
 class TransformDict(TypedDict):
     """
     Defines novel type for type-hinting transform dict
