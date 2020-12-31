@@ -8,6 +8,7 @@ from copy import deepcopy
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 
 from ttt.models.networks.utils import (
@@ -18,6 +19,8 @@ from ttt.models.init import init_factory
 from ttt.models.optim import optimizer_factory, scheduler_factory
 from ttt.utils.typing import LayerConfigDict
 from ttt.models.losses import loss_factory
+from ttt.data.data_module import DataModule
+from ttt.models.utils import rotate_batch
 
 
 class ClassificationModel(pl.LightningModule):
@@ -44,7 +47,9 @@ class ClassificationModel(pl.LightningModule):
         self._check_config(config)
 
         self.config = config
-        self.network_config = config['network']
+        self.data_config = self.config['data']
+        self.model_config = self.config['model']
+        self.network_config = self.model_config['network']
 
         # build and initialize the network
         self._build_network()
@@ -55,6 +60,9 @@ class ClassificationModel(pl.LightningModule):
 
         # setup losses
         self._setup_losses()
+
+        # setup dataloaders
+        self._setup_data()
 
     def _build_network(self):
         """Builds the network"""
@@ -81,15 +89,15 @@ class ClassificationModel(pl.LightningModule):
 
     def _setup_optimizers(self):
         """Sets up optimizers and schedulers"""
-        kwargs = deepcopy(self.config['optimizer']['params'])
+        kwargs = deepcopy(self.model_config['optimizer']['params'])
         network_params = list(self.main_net.parameters()) + list(self.ssl_net.head.parameters())
         kwargs.update({'params': network_params})
         self.optimizer = optimizer_factory.create(
-            self.config['optimizer']['name'],
+            self.model_config['optimizer']['name'],
             **kwargs)
 
-        if 'scheduler' in self.config['optimizer']:
-            scheduler_config = deepcopy(self.config['optimizer']['scheduler'])
+        if 'scheduler' in self.model_config['optimizer']:
+            scheduler_config = deepcopy(self.model_config['optimizer']['scheduler'])
             scheduler_config['params']['optimizer'] = self.optimizer
 
             self.scheduler = scheduler_factory.create(
@@ -98,32 +106,107 @@ class ClassificationModel(pl.LightningModule):
 
     def _setup_losses(self):
         self.losses = dict()
-        for index, loss_config in enumerate(self.config['losses']):
+        for index, loss_config in enumerate(self.model_config['losses']):
             loss_fn = loss_factory.create(
                 loss_config['name'], **loss_config['params']
             )
             self.losses.update({loss_config['name']: loss_fn})
 
+    def _setup_data(self):
+        self.data_module = DataModule(
+            self.data_config,
+            self.model_config['batch_size'],
+            self.model_config['num_workers']
+        )
+
+    def _process_batch(self, batch, mode, rotation):
+        inputs, labels, items = batch['signals'], batch['labels'], batch['items']
+        ssl_inputs, ssl_labels = rotate_batch(inputs, rotation)
+
+        if mode == "train":
+            main_predictions = self.main_net(inputs)
+            ssl_predictions = self.ssl_net(ssl_inputs)
+        else:
+            with torch.no_grad():
+                main_predictions = self.main_net(inputs)
+                ssl_predictions = self.ssl_net(ssl_inputs)
+
+        batch_data = {
+            "inputs": inputs,
+            "main_predictions": main_predictions,
+            "main_targets": labels,
+            "ssl_predictions": ssl_predictions,
+            "ssl_labels": ssl_labels,
+            "items": items
+        }
+
+        return batch_data
+
+    def _update_network_params(self, loss):
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        self.scheduler.step()
+
+    def _process_epoch(self, dataloader, mode, epoch):
+        iterator = tqdm(dataloader, dynamic_ncols=True)
+
+        for batch_idx, batch in enumerate(dataloader):
+            rotation = "rand" if mode == "train" else "expand"
+            batch_data = self._process_batch(batch, mode, rotation)
+
+            # main task loss
+            main_loss = 0.0
+            for loss_key, loss_fn in self.losses.items():
+                main_loss += loss_fn(batch_data['main_predictions'], batch_data['main_targets'])
+
+            # SSL task loss
+            ssl_loss = 0.0
+            for loss_key, loss_fn in self.losses.items():
+                ssl_loss += loss_fn(batch_data['ssl_predictions'], batch_data['ssl_targets'])
+
+            loss = main_loss + ssl_loss
+
+            iterator.set_description(
+                "V: {} | Epoch: {} | {} | Loss {:.4f}".format(
+                    self.config.version, epoch, mode.capitalize(), loss
+                ), refresh=True
+            )
+
+            if mode == "train":
+                self._update_network_params(loss)
+
+    def fit(self, n_epochs: int, train_dataloader: DataLoader, test_dataloader: DataLoader):
+        for epoch in range(n_epochs):
+            self.main_net.train()
+            self.ssl_net.train()
+
+            self._process_epoch(train_dataloader, "train", epoch)
+            self._process_epoch(test_dataloader, "test", epoch)
+
     @staticmethod
     def _check_config(config):
         assert isinstance(config, dict)
 
-        assert "network" in config
-        assert set(config["network"].keys()) == {
+        assert "model" in config and "data" in config and "version" in config
+        model_cfg = config["model"]
+        data_cfg = config["data"]
+
+        assert "network" in model_cfg
+        assert set(model_cfg["network"].keys()) == {
             "backbone", "extractor", "main_head", "ssl_head"
         }
-
-        assert "optimizer" in config
-
-        assert "losses" in config
+        assert "optimizer" in model_cfg
+        assert "losses" in model_cfg
 
 
 if __name__ == '__main__':
     import torch
+    from ttt.constants import DATASET_DIR
 
     main_classes = 10
     ssl_classes = 4
-    config = {
+    model_cfg = {
         "network": {
             # defines the backbone network
             "backbone": {
@@ -181,8 +264,56 @@ if __name__ == '__main__':
         # define all losses
         "losses": [
             {"name": "cross-entropy", "params": {}}
-        ]
+        ],
+        "batch_size": 32,
+        "num_workers": 1,
     }
+    data_cfg = {
+        "root": DATASET_DIR,
+        "dataset": {
+            "name": "cifar_dataset",
+            "params": {
+                "train": {}
+            },
+            "config": [{"name": "CIFAR-10", "version": None, "mode": "train"}]
+        },
+        "signal_transform": {
+            "train": [
+                {
+                    "name": "Permute",
+                    "params": {
+                        "order": [2, 0, 1]
+                    }
+                },
+                {
+                    "name": "Rescale",
+                    "params": {
+                        "value": 255.0
+                    }
+                },
+                {
+                    "name": "Normalize",
+                    "params": {
+                        "mean": "cifar",
+                        "std": "cifar"
+                    }
+                }
+            ]
+        },
+        "target_transform": {
+            "name": "classification",
+            "params": {
+                "classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            }
+        }
+    }
+
+    config = {
+        "model": model_cfg,
+        "data": data_cfg,
+        "version": "test"
+    }
+
     classifier = ClassificationModel(config)
 
     assert classifier.main_net.extractor == classifier.ssl_net.extractor
