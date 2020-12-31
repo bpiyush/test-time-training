@@ -111,11 +111,12 @@ class CIDAR10DatasetBuilder:
         :type **kwargs: dict
         :returns: a ClassificationDataset object
         """
-        for i, config in enumerate(dataset_config):
-            dataset_config[i]['mode'] = mode
+        # for i, config in enumerate(dataset_config):
+        #     dataset_config[i]['mode'] = mode
 
         kwargs['dataset_config'] = dataset_config
         kwargs['data_root'] = data_root
+        kwargs['mode'] = mode
         self._instance = CIFAR10(**kwargs)
         return self._instance
 
