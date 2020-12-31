@@ -13,8 +13,10 @@ from ttt.factory import Factory
 
 class BaseCollate:
     """Collate class for generic model to handle variable-length signals"""
-    def __init__(self):
+    def __init__(self, signal_type=torch.float32, target_type=torch.long):
         super(BaseCollate, self).__init__()
+        self.signal_type = signal_type
+        self.target_type = target_type
 
     def __call__(self, batch: Tuple[Dict]) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -30,14 +32,15 @@ class BaseCollate:
         items = []
 
         for data_point in batch:
-            signal = data_point['signal']
+            signal = data_point['signal'].unsqueeze(0)
+
             signals.append(signal)
             labels.append(data_point['label'])
             items.append(data_point['item'])
 
         collated_batch = {
-            'signals': signals,
-            'labels': torch.Tensor(labels),
+            'signals': torch.cat(signals).type(self.signal_type),
+            'labels': torch.Tensor(labels).type(self.target_type),
             'items': items
         }
 
