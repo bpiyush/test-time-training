@@ -1,4 +1,8 @@
 
+### Installing conda
+
+You can run `conda -V` to check if you have `conda` installed. If not, you can follow instructions [here](https://docs.conda.io/projects/conda/en/4.6.1/user-guide/install/index.html).
+
 ### Create a conda environment
 ```
 conda create --name ttt python=3.7
