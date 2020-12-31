@@ -37,7 +37,7 @@ model:
               # number of classes in CIFAR-10
               out_features: 10
     # defines the SSL task head
-    main_head:
+    ssl_head:
       params:
         layer_name: layer2
         _copy: true
