@@ -1,6 +1,6 @@
 """Configuration file reader."""
 import os
-from os.path import join, exists, dirname
+from os.path import join, exists, dirname, realpath
 from typing import Dict
 
 from ttt.utils.io import read_yml, save_yml
@@ -26,7 +26,7 @@ class Config:
         self.version = version
         self.user = "piyush" if user is None else user
 
-        HOME = dirname(os.getcwd())
+        HOME = dirname(dirname(realpath(__file__)))
         ALL_OUT_DIR = join(ROOT, "outputs")
         USER_OUT_DIR = join(ALL_OUT_DIR, self.user)
 
@@ -58,7 +58,7 @@ class Config:
     def _check_args(version, user):
         assert isinstance(version, str) and version.endswith(("yml", "yaml"))
 
-        cfg_path = join(dirname(os.getcwd()), "cfg", version)
+        cfg_path = join(dirname(dirname(realpath(__file__))), "cfg", version)
         assert exists(cfg_path), f"Config file does not exist at {version}"
 
         assert isinstance(user, (str, NoneType))

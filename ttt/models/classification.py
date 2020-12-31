@@ -46,11 +46,9 @@ class ClassificationModel(pl.LightningModule):
         self.val_mode = val_mode
         self.test_mode = test_mode
 
-        self._check_config(config)
-
         self.config = config
-        self.data_config = self.config['data']
-        self.model_config = self.config['model']
+        self.data_config = self.config.data
+        self.model_config = self.config.model
         self.network_config = self.model_config['network']
 
         # build and initialize the network
@@ -179,7 +177,7 @@ class ClassificationModel(pl.LightningModule):
 
             iterator.set_description(
                 "V: {} | Epoch: {} | {} | Loss {:.4f}".format(
-                    colored(self.config['version'], "blue"),
+                    colored(self.config.version, "blue"),
                     colored(epoch, "blue"),
                     colored(mode.upper(), "blue"),
                     loss
@@ -194,161 +192,16 @@ class ClassificationModel(pl.LightningModule):
             self._process_epoch(train_dataloader, "train", epoch)
             self._process_epoch(test_dataloader, "test", epoch)
 
-    @staticmethod
-    def _check_config(config):
-        assert isinstance(config, dict)
-
-        assert "model" in config and "data" in config and "version" in config
-        model_cfg = config["model"]
-        data_cfg = config["data"]
-
-        assert "network" in model_cfg
-        assert set(model_cfg["network"].keys()) == {
-            "backbone", "extractor", "main_head", "ssl_head"
-        }
-        assert "optimizer" in model_cfg
-        assert "losses" in model_cfg
-
 
 if __name__ == '__main__':
     import torch
     from ttt.constants import DATASET_DIR
+    from ttt.config import Config
 
-    main_classes = 10
-    ssl_classes = 4
-    model_cfg = {
-        "network": {
-            # defines the backbone network
-            "backbone": {
-                "name": "resnet-cifar",
-                "params": {"width": 1, "depth": 26, "classes": main_classes}
-            },
-            # defines the extractor subnetwork from backbone
-            "extractor": {"params": {"layer_name": "layer2", "add_flat": False}},
-            # defines the main task head
-            "main_head": {
-                "params": {
-                    "layer_name": "layer2",
-                    "_copy": False,
-                    "add_layers": [
-                        {"name": "ViewFlatten", "params": {}},
-                        {
-                            "name": "Linear",
-                            "params": {"in_features": 64 * 1, "out_features": main_classes}
-                        }
-                    ]
-                }
-            },
-            # defines the SSL task head
-            "ssl_head": {
-                "params": {
-                    "layer_name": "layer2",
-                    "_copy": True,
-                    "add_layers": [
-                        {"name": "ViewFlatten", "params": {}},
-                        {
-                            "name": "Linear",
-                            "params": {"in_features": 64 * 1, "out_features": ssl_classes}
-                        }
-                    ]
-                }
-            }
-        },
-        # define the optimizer and scheduler
-        "optimizer": {
-            "name": "SGD",
-            "params": {
-                "lr": 0.1,
-                "weight_decay": 5e-4,
-                "momentum": 0.9
-            },
-            "scheduler": {
-                "name": "MultiStepLR",
-                "params": {
-                    "milestones": [50, 65],
-                    "gamma": 0.1,
-                    "last_epoch": -1
-                }
-            }
-        },
-        # define all losses
-        "losses": [
-            {"name": "cross-entropy", "params": {}}
-        ],
-        "batch_size": 128,
-        "num_workers": 1,
-    }
-    data_cfg = {
-        "root": DATASET_DIR,
-        "dataset": {
-            "name": "cifar_dataset",
-            "params": {
-                "train": {}
-            },
-            "config": [{"name": "CIFAR-10", "version": None, "mode": "train"}]
-        },
-        "signal_transform": {
-            "train": [
-                {
-                    "name": "Permute",
-                    "params": {
-                        "order": [2, 0, 1]
-                    }
-                },
-                {
-                    "name": "Rescale",
-                    "params": {
-                        "value": 255.0
-                    }
-                },
-                {
-                    "name": "Normalize",
-                    "params": {
-                        "mean": "cifar",
-                        "std": "cifar"
-                    }
-                }
-            ],
-            "test": [
-                {
-                    "name": "Permute",
-                    "params": {
-                        "order": [2, 0, 1]
-                    }
-                },
-                {
-                    "name": "Rescale",
-                    "params": {
-                        "value": 255.0
-                    }
-                },
-                {
-                    "name": "Normalize",
-                    "params": {
-                        "mean": "cifar",
-                        "std": "cifar"
-                    }
-                }
-            ]
-        },
-        "target_transform": {
-            "name": "classification",
-            "params": {
-                "classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-            }
-        },
-        "collate_fn": {
-            "name": "base",
-            "params": {}
-        }
-    }
+    # through config file
+    config = Config(version="defaults/base.yml", user=None)
 
-    config = {
-        "model": model_cfg,
-        "data": data_cfg,
-        "version": "test"
-    }
-
+    # define the classifier
     classifier = ClassificationModel(config)
 
     # check networks
