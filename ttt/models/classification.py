@@ -275,7 +275,7 @@ if __name__ == '__main__':
         "losses": [
             {"name": "cross-entropy", "params": {}}
         ],
-        "batch_size": 32,
+        "batch_size": 128,
         "num_workers": 1,
     }
     data_cfg = {
