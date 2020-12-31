@@ -5,6 +5,7 @@ import logging
 from abc import abstractmethod
 from copy import deepcopy
 
+from tqdm import tqdm
 import numpy as np
 import torch
 import torch.nn as nn
@@ -176,7 +177,7 @@ class ClassificationModel(pl.LightningModule):
             if mode == "train":
                 self._update_network_params(loss)
 
-    def fit(self, n_epochs: int, train_dataloader: DataLoader, test_dataloader: DataLoader):
+    def fit(self, n_epochs: int, train_dataloader, test_dataloader):
         for epoch in range(n_epochs):
             self.main_net.train()
             self.ssl_net.train()
@@ -298,6 +299,27 @@ if __name__ == '__main__':
                         "std": "cifar"
                     }
                 }
+            ],
+            "test": [
+                {
+                    "name": "Permute",
+                    "params": {
+                        "order": [2, 0, 1]
+                    }
+                },
+                {
+                    "name": "Rescale",
+                    "params": {
+                        "value": 255.0
+                    }
+                },
+                {
+                    "name": "Normalize",
+                    "params": {
+                        "mean": "cifar",
+                        "std": "cifar"
+                    }
+                }
             ]
         },
         "target_transform": {
@@ -316,15 +338,23 @@ if __name__ == '__main__':
 
     classifier = ClassificationModel(config)
 
+    # check networks
     assert classifier.main_net.extractor == classifier.ssl_net.extractor
     assert classifier.main_net.head != classifier.ssl_net.head
 
+    # check optimizer and scheduler
     assert hasattr(classifier, 'optimizer')
     assert hasattr(classifier, 'scheduler')
 
+    # check losses
     assert hasattr(classifier, "losses")
     loss_fn = classifier.losses['cross-entropy']
     predictions = torch.tensor([[0.3, 0.7]])
     targets = torch.tensor([1])
     loss = loss_fn(predictions, targets).numpy() 
     assert loss == np.array(0.5130153, dtype=np.float32)
+
+    # check training
+    train_dataloader = classifier.data_module.train_dataloader()
+    test_dataloader = classifier.data_module.test_dataloader()
+    classifier.fit(10, train_dataloader, test_dataloader)
