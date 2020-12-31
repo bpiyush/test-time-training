@@ -10,3 +10,4 @@ pytorch-lightning
 ipdb
 kornia==0.2.2
 termcolor
+wandb
