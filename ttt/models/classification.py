@@ -6,6 +6,7 @@ from abc import abstractmethod
 from copy import deepcopy
 
 from tqdm import tqdm
+from termcolor import colored
 import numpy as np
 import torch
 import torch.nn as nn
@@ -137,7 +138,7 @@ class ClassificationModel(pl.LightningModule):
             "main_predictions": main_predictions,
             "main_targets": labels,
             "ssl_predictions": ssl_predictions,
-            "ssl_labels": ssl_labels,
+            "ssl_targets": ssl_labels,
             "items": items
         }
 
@@ -150,9 +151,17 @@ class ClassificationModel(pl.LightningModule):
         self.scheduler.step()
 
     def _process_epoch(self, dataloader, mode, epoch):
+
+        if mode == "train":
+            self.main_net.train()
+            self.ssl_net.train()
+        else:
+            self.main_net.eval()
+            self.ssl_net.eval()
+
         iterator = tqdm(dataloader, dynamic_ncols=True)
 
-        for batch_idx, batch in enumerate(dataloader):
+        for batch_idx, batch in enumerate(iterator):
             rotation = "rand" if mode == "train" else "expand"
             batch_data = self._process_batch(batch, mode, rotation)
 
@@ -170,7 +179,10 @@ class ClassificationModel(pl.LightningModule):
 
             iterator.set_description(
                 "V: {} | Epoch: {} | {} | Loss {:.4f}".format(
-                    self.config.version, epoch, mode.capitalize(), loss
+                    colored(self.config['version'], "blue"),
+                    colored(epoch, "blue"),
+                    colored(mode.upper(), "blue"),
+                    loss
                 ), refresh=True
             )
 
@@ -179,9 +191,6 @@ class ClassificationModel(pl.LightningModule):
 
     def fit(self, n_epochs: int, train_dataloader, test_dataloader):
         for epoch in range(n_epochs):
-            self.main_net.train()
-            self.ssl_net.train()
-
             self._process_epoch(train_dataloader, "train", epoch)
             self._process_epoch(test_dataloader, "test", epoch)
 
@@ -327,6 +336,10 @@ if __name__ == '__main__':
             "params": {
                 "classes": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
             }
+        },
+        "collate_fn": {
+            "name": "base",
+            "params": {}
         }
     }
 
