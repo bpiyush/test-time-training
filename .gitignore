@@ -1,3 +1,7 @@
+# YML config files
+*.yml
+!cfg/defaults/*
+
 # SFTP configs
 sftp-config.json
 
