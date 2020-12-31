@@ -45,3 +45,10 @@ This should run without any errors.
 ```bash
 export PYTHONPATH=$PWD
 ```
+
+#### Setup Weights and Biases API Key
+
+If you do not have a [W&B](https://wandb.ai/) account, please create one and obtain your API key from Settings and run:
+```bash
+export WANDB_API_KEY=<Your Key>
+```
