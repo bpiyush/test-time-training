@@ -1,9 +1,5 @@
 description: Base config with hyperparameters from paper
 
-data:
-  dataset: {}
-
-
 model:
   batch_size: 132
   num_workers: 1
