@@ -7,6 +7,8 @@ data:
 model:
   batch_size: 132
   num_workers: 1
+  num_epochs: 75
+
   network:
     # defines the backbone network
     backbone:

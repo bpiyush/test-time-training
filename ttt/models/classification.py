@@ -159,6 +159,9 @@ class ClassificationModel(pl.LightningModule):
 
         iterator = tqdm(dataloader, dynamic_ncols=True)
 
+        epoch_data = {
+            "loss": defaultdict(list)
+        }
         for batch_idx, batch in enumerate(iterator):
             rotation = "rand" if mode == "train" else "expand"
             batch_data = self._process_batch(batch, mode, rotation)
@@ -187,22 +190,64 @@ class ClassificationModel(pl.LightningModule):
             if mode == "train":
                 self._update_network_params(loss)
 
-    def fit(self, n_epochs: int, train_dataloader, test_dataloader):
+            epoch_data['loss']['main'].append(main_loss.detach().numpy())
+            epoch_data['loss']['ssl'].append(ssl_loss.detach().numpy())
+            epoch_data['loss']['total'].append(loss.detach().numpy())
+
+        for key in epoch_data['loss']:
+            epoch_data['loss'][key] = np.mean(epoch_data['loss'][key])
+
+        return epoch_data
+
+    def fit(self, n_epochs: int, train_dataloader, test_dataloader, use_wandb):
+        wandb_logs = dict()
         for epoch in range(n_epochs):
-            self._process_epoch(train_dataloader, "train", epoch)
-            self._process_epoch(test_dataloader, "test", epoch)
+            train_data = self._process_epoch(train_dataloader, "train", epoch)
+            test_data = self._process_epoch(test_dataloader, "test", epoch)
+
+            for key in train_data['loss']:
+                wandb_logs.update({f"train/{key}-loss": train_data['loss'][key]})
+                wandb_logs.update({f"test/{key}-loss": test_data['loss'][key]})
+
+            if use_wandb:
+                wandb.log(wandb_logs, step=epoch)
 
 
 if __name__ == '__main__':
+    import os
+    from os.path import join, dirname
+    import wandb
+    import logging
     import torch
     from ttt.constants import DATASET_DIR
     from ttt.config import Config
+    from ttt.utils.logger import set_logger
+    from ttt.utils.random import seed_everything
+
+    # fix all seeds
+    seed_everything()
 
     # through config file
-    config = Config(version="defaults/base.yml", user=None)
+    version = "defaults/base.yml"
+    cfg = Config(version=version, user=None)
+
+    # set logging
+    set_logger(join(cfg.log_dir, 'train.log'))
+    logging.info({"Sample argument": 10})
+
+    # setup W&B configuration (will need to be configured for non-wadhwani users)
+    os.environ['WANDB_ENTITY'] = "wadhwani"
+    os.environ['WANDB_PROJECT'] = "test-time-training"
+    os.environ['WANDB_DIR'] = dirname(cfg.ckpt_dir)
+
+    run_name = version.replace('/', '_')
+    wandb.init(
+        name=run_name, dir=dirname(cfg.ckpt_dir), notes=cfg.description
+    )
+    wandb.config.update(cfg.__dict__)
 
     # define the classifier
-    classifier = ClassificationModel(config)
+    classifier = ClassificationModel(cfg)
 
     # check networks
     assert classifier.main_net.extractor == classifier.ssl_net.extractor
@@ -223,4 +268,4 @@ if __name__ == '__main__':
     # check training
     train_dataloader = classifier.data_module.train_dataloader()
     test_dataloader = classifier.data_module.test_dataloader()
-    classifier.fit(10, train_dataloader, test_dataloader)
+    classifier.fit(cfg.model["num_epochs"], train_dataloader, test_dataloader, use_wandb=True)
