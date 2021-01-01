@@ -1,0 +1,143 @@
+description: Base config with hyperparameters from paper
+
+model:
+  batch_size: 132
+  num_workers: 1
+  num_epochs: 75
+
+  network:
+    # defines the backbone network
+    backbone:
+      name: resnet-cifar
+      params:
+        width: 1
+        depth: 26
+        classes: 10
+
+    # defines the extractor subnetwork from backbone
+    extractor:
+      params:
+        layer_name: layer2
+        add_flat: false
+
+    # defines the main task head
+    main_head:
+      params:
+        layer_name: layer2
+        _copy: false
+        add_layers:
+          - name: ViewFlatten
+            params: {}
+          - name: Linear
+            params:
+              # should be 64 x width(ResNet)
+              in_features: 64
+              # number of classes in CIFAR-10
+              out_features: 10
+    # defines the SSL task head
+    ssl_head:
+      params:
+        layer_name: layer2
+        _copy: true
+        add_layers:
+          - name: ViewFlatten
+            params: {}
+          - name: Linear
+            params:
+              # should be 64 x width(ResNet)
+              in_features: 64
+              # number of classes in SSL task
+              out_features: 4
+
+  # define the optimizer and scheduler
+  optimizer:
+    name: SGD
+    params:
+      lr: 0.1
+      weight_decay: 0.0005
+      momentum: 0.9
+    scheduler:
+      name: MultiStepLR
+      params:
+        milestones:
+          - 50
+          - 65
+        gamma: 0.1
+        last_epoch: -1
+
+  # define all losses
+  losses:
+    - name: cross-entropy
+      params: {}
+
+
+data:
+  root: /efs/test-time-training/datasets/
+
+  dataset:
+    name: cifar_dataset
+    params:
+      train: {}
+    config:
+    - name: CIFAR-10
+      version: null
+
+  # image transforms
+  signal_transform:
+    train:
+    - name: RandomAffine
+      params:
+        translate: !!python/tuple [0.0, 0.3]
+        scale: !!python/tuple [0.1, 0.3]
+    - name: RandomVerticalFlip
+      params: {}
+    - name: RandomHorizontalFlip
+      params: {}
+    - name: Permute
+      params:
+        order:
+        - 2
+        - 0
+        - 1
+    - name: Rescale
+      params:
+        value: 255
+    - name: Normalize
+      params:
+        mean: cifar
+        std: cifar
+    test:
+    - name: Permute
+      params:
+        order:
+        - 2
+        - 0
+        - 1
+    - name: Rescale
+      params:
+        value: 255
+    - name: Normalize
+      params:
+        mean: cifar
+        std: cifar
+
+  # label transforms
+  target_transform:
+    name: classification
+    params:
+      classes:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+
+  collate_fn:
+    name: base
+    params: {}
+
